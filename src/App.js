@@ -4,65 +4,107 @@ import './App.css';
 
 class App extends React.Component{
   state = {
-    isBreak: false,
     sessionLength: 25,
-    currentSession: undefined,
     breakLength: 5,
-    running: false
+    running: false,
+    timerState: 'stopped',
+    timerType: 'Session',
+    timer: 1500
+  }
+
+
+  countdown = () => {
+    setInterval(this.decrementTimer,1000)
+  }
+
+
+decrementTimer = () => {
+    this.setState({
+      timer: this.state.timer -1 
+    })
+    console.log(this.state.timer)
+  }
+
+  
+
+  phaseControl = () => {
+    let timer = this.state.timer;
+    this.buzzer(timer);
+    if (timer < 0) { 
+      if(this.state.timerType === 'Session'){
+        this.countdown();
+        this.switchTimer(this.state.breakLength * 60, 'Break');
+      } else{
+        this.countdown();
+        this.switchTimer(this.state.sessionLength * 60, 'Session')
+      } 
+    }
+  }
+
+  switchTimer = (num,str) => {
+    this.setState({
+      timer: num,
+      timerType: str
+    })
+  }
+  buzzer(_timer) {
+    if (_timer === 0) {
+     console.log("beep")
+    }
+  }
+
+
+  clockify() {
+    let hours = Math.floor(this.state.timer / (60 * 60))
+    let minutes = Math.floor(this.state.timer / 60);
+    let seconds = this.state.timer - minutes * 60;
+    seconds = seconds < 10 ? '0' + seconds : seconds;
+    minutes = minutes < 10 ? '0' + minutes : minutes;
+    return hours + ':' + minutes + ':' + seconds;
   }
 
   reset = () => {
     this.setState({
-      isBreak: false,
-      sessionLength: 25,
-      currentSession: undefined,
-      breakLength: 5,
-      milliseconds: 0,
-      running: false
+      sessionLength: 1500,
+      breakLength: 300,
+      timerState: 'stopped',
+      running: false,
+      timer: 1500,
+      timerType: 'Session'
     })
   }
 
-  intialize = () => {
-    let currentSession = this.state.sessionLength * 60000;
-    let breakLengthMilli = this.state.breakLength * 60000;
-    let seconds = Math.floor((currentSession/1000) % 60);
-    let minutes = Math.floor((currentSession/(1000 * 60) % 60));
-    let hours = Math.floor(currentSession / (1000 * 60 * 60)) ;
-     hours = (hours >= 10) ? hours : "0" + hours;
-     minutes = (minutes >= 10) ? minutes : "0" + minutes;
-     seconds = (seconds >= 10) ? seconds : "0" + seconds;
-    let timeString = `${hours}:${minutes}:${seconds}`;
-    console.log(timeString)
-    return timeString;
+  timerControl() {
+    if(this.state.timerState === 'stopped'){
+      this.countdown();
+      this.setState({timerState: 'running'})
+    }else{
+      this.setState({timerState: 'stopped'})
+    }
   }
 
 
-  start = () => {
-    let currentSessionVar =  this.state.sessionLength;
-    this.setState({
-      currentSession: currentSessionVar - 1 
-  })
-}
- 
-  
-
-  sessionUpManager = () => {
-    if(this.state.sessionLength < 90){
-      this.setState({
-        sessionLength: this.state.sessionLength + 5
-      })
-    }
-    }
 
     sessionDownManager = () => {
-      if(this.state.sessionLength > 5){
+      if(this.state.running === true){
+        return;
+      }
+      if(this.state.sessionLength > 1){
       this.setState({
-        sessionLength: this.state.sessionLength - 5
+        sessionLength: this.state.sessionLength - 1
       })
     }
-  } 
-
-
+  }
+  sessionUpManager = () => {
+    if(this.state.running === true){
+      return;
+    }
+    if(this.state.sessionLength < 90){
+    this.setState({
+      sessionLength: this.state.sessionLength + 1
+    })
+  }
+}  
   breakUpManager = () => {
     if(this.state.breakLength < 30){
       this.setState({
@@ -70,14 +112,18 @@ class App extends React.Component{
       })
     }
   }
-
-  breakDownManager = () => {
-    if(this.state.breakLength > 2){
+ breakDownManager = () => {
+  if(this.state.running === true){
+    return;
+  }
+    if(this.state.breakLength > 1){
       this.setState({
         breakLength: this.state.breakLength - 1
       })
     }
   }
+  
+
 
   render() {
   return (
@@ -102,11 +148,11 @@ class App extends React.Component{
          </div>
      </div>
       <div className="screen">
-        <p className="clock" style={{color: "white"}}>Currrent: Session</p>
-        <p className="time">{this.intialize()}</p>
+        <p className="clock" style={{color: "white"}}>{this.state.timerType}</p>
+        <p className="time">{this.clockify()}</p>
         <div className="controls">
-         <button style={{backgroundColor: "inherit"}} onClick={this.start}>Start</button>
-         <button style={{backgroundColor: "none"}} >Pause</button>
+         <button style={{backgroundColor: "inherit"}} onClick={this.countdown}>Start</button>
+         <button style={{backgroundColor: "none"}} onClick={this.timerControl}>Pause</button>
          <button style={{backgroundColor: "none"}} onClick={this.reset}>Reset</button>
          </div>
       </div>
